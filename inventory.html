@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Инвентарь Сталкера</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { text-align: center; border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
+        .stats { background: #2b2b2b; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+        .item-list { display: grid; gap: 10px; }
+        .item {
+            background: #333;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 5px;
+        }
+        .btn {
+            background: #005500;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 3px;
+        }
+        .btn:active { background: #00ff00; color: black; }
+    </style>
+</head>
+<body>
+    <h1>🎒 Рюкзак</h1>
+    
+    <div class="stats" id="stats-block">
+        Загрузка данных...
+    </div>
+
+    <div class="item-list" id="items-container">
+        </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрыть на весь экран
+
+        // Получаем данные, которые передал бот через URL
+        const urlParams = new URLSearchParams(window.location.search);
+        // Пример данных: ?inventory={"Аптечка":2,"Нож":1}&stats={"hp":100,"money":50}
+        const inventoryData = JSON.parse(urlParams.get('inventory') || '{}');
+        const statsData = JSON.parse(urlParams.get('stats') || '{}');
+
+        // Отображаем статы
+        document.getElementById('stats-block').innerHTML = `
+            ❤️ Здоровье: ${statsData.health || 0}<br>
+            💰 Деньги: ${statsData.money || 0}<br>
+            💪 Урон: ${statsData.damage || 0}
+        `;
+
+        const container = document.getElementById('items-container');
+
+        // Отображаем предметы
+        for (const [name, count] of Object.entries(inventoryData)) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            
+            // Логика кнопок
+            let actionBtn = '';
+            if (name === 'Аптечка') {
+                actionBtn = `<button class="btn" onclick="useItem('${name}')">Использовать</button>`;
+            } else if (['Старый пистолет', 'Простой бронежилет'].includes(name)) {
+                actionBtn = `<button class="btn" onclick="equipItem('${name}')">Экипировать</button>`;
+            }
+
+            itemDiv.innerHTML = `
+                <span>${name} (x${count})</span>
+                ${actionBtn}
+            `;
+            container.appendChild(itemDiv);
+        }
+
+        if (Object.keys(inventoryData).length === 0) {
+            container.innerHTML = '<div style="text-align:center">Рюкзак пуст...</div>';
+        }
+
+        // Функция отправки данных обратно боту
+        function useItem(item) {
+            tg.sendData(JSON.stringify({action: 'use_item', item: item}));
+        }
+
+        function equipItem(item) {
+            tg.sendData(JSON.stringify({action: 'equip_item', item: item}));
+        }
+    </script>
+</body>
+</html>
